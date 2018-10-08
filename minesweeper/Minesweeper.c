@@ -9,6 +9,9 @@
 #define NUM_TILES_Y 9
 #define NUM_MINES 10
 
+char board[NUM_TILES_X][NUM_TILES_Y], *mine = "*";
+int mine_positions[NUM_MINES][2];
+
 typedef struct{
   int adjacent_mines;
   bool revealed;
@@ -21,29 +24,38 @@ typedef struct{
 } GameState;
 
 bool tile_contains_mine(int x, int y){
-  /*for (i=0;i<10;i++){
-    if board[i][j] == "x"
-  }*/
+  if(board[x][y]!= *mine){
   return false;
+} else {
+  return true;
 }
-
-char board[10][10];
+}
 
 void drawboard(){
   int i, j;
-  //char *p = ".";
-  for (i=0; i< 10; i++){
-    for (j=0; j< 10; j++){
-    //board[i][j]= *p;
-      printf("%c ",board[i][j]);
+  char *p = " ";
+  printf("%s","  ABCDEFGHI\n 0");
+  for (i=0; i< NUM_TILES_X; i++){
+    for (j=0; j< NUM_TILES_Y ; j++){
+      if(board[i][j]!= *mine){
+        board[i][j]= *p;
+      }
+      printf("%c",board[i][j]);
     }
-    printf("\n");
+    if(i<NUM_TILES_X){
+    printf("\n %d", i+1);
   }
+  }
+  printf("\n");
+}
+
+void display_welcome(){
+  printf("%s","Welcome to the online Minesweeper game!\n");
 }
 
 void place_mines(){
   for (int i=0; i < NUM_MINES; i++){
-    char *mine = "o";
+
     int x,y;
     do {
       x = rand() % NUM_TILES_X;
@@ -52,17 +64,18 @@ void place_mines(){
     } while (tile_contains_mine(x,y));
     // place mine and (x,y)
     board[x][y] = *mine;
-
   }
 }
 
 int main(int argc, char *argv[]) {
+  srand(RANDOM_NUMBER_SEED);
+  display_welcome();
   place_mines();
-    drawboard();
+  drawboard();
 
     //Tile.revealed = false;
 
 
-  srand(RANDOM_NUMBER_SEED);
+
   return 0;
 }
