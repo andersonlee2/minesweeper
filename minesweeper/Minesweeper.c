@@ -10,16 +10,20 @@
 #define NUM_MINES 10
 
 char board[NUM_TILES_X][NUM_TILES_Y], *mine = "*";
+char *revealed = "x";
+	char *flag = "+";
 int mine_positions[NUM_MINES][2];
-int x_input[1], y_input[1];
+int x_input, y_input;
+
+char option_input;
+  bool valid_option, game_running;
+  
 
 typedef struct{
   int adjacent_mines;
   bool revealed;
   bool is_mine;
 } Tile;
-
-
 
 typedef struct{
   Tile tiles[NUM_TILES_X][NUM_TILES_Y];
@@ -36,16 +40,27 @@ bool tile_contains_mine(int x, int y){
 }
 }
 
+void initialise_board(){
+	char *space = " ";
+	int i = 0, j = 0;
+	for (i=0; i< NUM_TILES_X; i++){
+	    for (j=0; j< NUM_TILES_Y ; j++){
+	    	board[i][j]= *space;
+	    }
+	}
+	
+}
+
 void drawboard(){
   //game->running = true;
   int i, j;
-  char *p = " ";
+  char *p = ".";
   printf("%s","  012345678\n 0");
   for (i=0; i< NUM_TILES_X; i++){
     for (j=0; j< NUM_TILES_Y ; j++){
-      if(board[i][j]!= *mine){
+      /*if(board[i][j]!= *mine){
         board[i][j]= *p;
-      }
+      }*/
       printf("%c",board[i][j]);
     }
     if(i<NUM_TILES_Y -1){
@@ -55,10 +70,7 @@ void drawboard(){
   printf("\n");
 }
 
-void display_welcome(){
-  printf("%s","Welcome to the online Minesweeper game!\n Press anykey for a board with mines\n");
-  getchar();
-}
+
 
 void display_menu(){
   //game->running= false;
@@ -66,23 +78,11 @@ void display_menu(){
   getchar();
 }
 
-void display_game_instructions(){
-  char option_input[1], x_input[1], y_input[1];
-  printf("%s", "\nChoose an option (They aren't wokring properly yet):\n<R> Reveal tile\n<F> Place flag\n<Q>Quit\n\n Option(R,F,Q):");
-  scanf("%c",option_input);
-  if (option_input == "r"||"f"){
-    printf("%s", "\nEnter x coordinate:");
-    scanf("%c", x_input);
-    getchar();
-    printf("%s", "\nEnter y coordinate:");
-    scanf("%c", y_input);
-    getchar();
-  } else if(option_input == "q"){
-    //game->running = false;
-    display_menu();
-  } else {
-    printf("%s", "Invalid entry\n\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n<Q>Quit\n\n Option(R,F,Q):");
-  }
+void display_welcome(){
+  printf("%s","Welcome to the online Minesweeper game!\n Press anykey for a board with mines\n");
+  
+  getchar();
+  game_running = true;
 }
 
 void place_mines(){
@@ -99,16 +99,49 @@ void place_mines(){
   }
 }
 
+void play_game(){
+	valid_option = false;
+	
+	while (!valid_option){
+		
+		drawboard();
+			printf("%s", "\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n <Q>Quit\n\n Option(R,F,Q):\n\n");
+			option_input = getchar();
+			if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+			  valid_option = true;
+		    }
+		}
+		
+		if (option_input == 'r' || option_input == 'f'){
+			 printf("\nEnter x coordinate:");
+			 scanf("%d", &x_input);
+			 //getchar();
+			 printf("\nEnter y coordinate:");
+			 scanf("%d", &y_input);
+			 if(option_input == 'r'){
+				 board[x_input][y_input] = *revealed;
+			 } else {
+				 board[x_input][y_input] = *flag;
+			 }
+			 drawboard();
+			 valid_option = false; //return to options
+		} else if(option_input == 'q'){	
+			 game_running = false;
+			 display_welcome();
+		}
+}
+
 int main(int argc, char *argv[]) {
-  //game->running = false;
-  srand(RANDOM_NUMBER_SEED);
-  display_menu();
-  display_welcome();
-  place_mines();
-  drawboard();
-  display_game_instructions();
-
-
-
+	initialise_board();
+	srand(RANDOM_NUMBER_SEED);
+	display_menu();
+	display_welcome();
+	place_mines();
+	//drawboard();
+	while(game_running){
+		play_game();	
+	}
+	
+	
   return 0;
 }
