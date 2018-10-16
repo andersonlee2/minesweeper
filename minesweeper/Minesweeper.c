@@ -90,28 +90,13 @@ void display_login(){
 }
 
 void display_welcome(){
-  printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nSelect your option:");
-  scanf("%d", &menu_option);
+  printf("%s","Welcome to the online Minesweeper game!\n");
   
-	if (menu_option == 1){
-		initialise_board();
-		place_mines();
-	  game_running = true;
-	} else if (menu_option == 2){
-		leaderboard_requested = true;
-
-	} else if (menu_option ==3){
-		exit(1);
-	} else {
-		printf("Enter a valid option. Select from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose bitch:");
-	}
 }
 
 void display_leaderboard(){
-	printf("\nWe don't have a leaderboard yet soz\n\n");
-	//getchar();
+	printf("\nWe don't have a leaderboard yet soz.\n");
 	leaderboard_requested = false;
-	display_welcome();
 }
 
 int check_tile(int x, int y){
@@ -141,14 +126,18 @@ int check_tile(int x, int y){
 }
 
 void play_game(){
-	!valid_option;
+	valid_option = false;
 	while (!valid_option){
 		drawboard();
-			printf("%s", "\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\n Option(R,F,Q):\n\n");
-			option_input = getchar();
-			if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
-			  valid_option = true;
-		    }
+		printf("Choose an option:\n");
+		printf("<R> Reveal tile\n");
+		printf("<F> Place flag\n");
+		printf("<Q> Quit\n\n"); 			
+		printf("Option(R,F,Q):\n\n");
+		option_input = getchar();
+		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+		  valid_option = true;
+	    	}
 		}
 		if (option_input == 'r' || option_input == 'f'){
 			 printf("\nEnter x coordinate:");
@@ -172,22 +161,70 @@ void play_game(){
 			 }
 			 valid_option = false; //return to options
 		} else if(option_input == 'q'){
-			 game_running = false;
-			 display_welcome();
+			 game_running= true;
+			 
 		}
 }
 
+void print_menu(){
+	//print menu options
+	printf("\n<1> Play Minesweeper\n");
+	printf("<2> Show Leaderboard\n");
+	printf("<3> Quit\n");
+	printf("Option (1,2,3): ");
+};
+
+
+
+void wait_for_key(){	
+	printf("Enter any key to continue:");
+	char enter = 0;
+	scanf(" %c", &enter);
+}
+
+
+
 int main(int argc, char *argv[]) {
+	
 	srand(RANDOM_NUMBER_SEED);
 	display_login();
 	display_welcome();
-	while(leaderboard_requested){
-		display_leaderboard();
-	}
 	
-	while(game_running){
-		play_game();
-	}
-	
-  return 0;
+	do {
+		//display menu options
+		print_menu();
+		
+		//get client input
+		scanf("%d", &menu_option );
+
+		//check if input is valid
+		while ( menu_option > 3 || menu_option < 1 ){
+			printf("You entered an invalid option. Option (1,2,3): \n");
+			scanf("%d", &menu_option );
+		} 
+		
+		if (menu_option == 1){
+			// Play Game
+			initialise_board();
+			place_mines();
+		  	
+			play_game();
+			
+			wait_for_key();
+			
+			
+		} else if (menu_option == 2) {
+			// Show Leaderboard
+			display_leaderboard();
+			wait_for_key();
+
+		} else {
+			// Quit Main
+			printf("\nAdios!\n");
+			exit(1);
+		}
+
+	} while( 1 );	
+
+  	return 0;
 }
