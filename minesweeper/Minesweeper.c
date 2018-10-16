@@ -16,8 +16,7 @@ int mine_positions[NUM_MINES][2];
 int x_input, y_input, menu_option;
 
 char option_input;
-  bool valid_option, game_running;
-
+  bool valid_option, game_running, leaderboard_requested;
 
 typedef struct{
   int adjacent_mines;
@@ -85,26 +84,34 @@ void place_mines(){
   }
 }
 
-void display_menu(){
+void display_login(){
   printf("%s","Sup cunt the socket connection shit will go here. For now just press any key\n");
   getchar();
 }
 
 void display_welcome(){
-  printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose bitch:");
+  printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nSelect your option:");
   scanf("%d", &menu_option);
+  
 	if (menu_option == 1){
 		initialise_board();
 		place_mines();
 	  game_running = true;
 	} else if (menu_option == 2){
-		printf("We don't have a leaderboard yet soz\n");
+		leaderboard_requested = true;
 
 	} else if (menu_option ==3){
 		exit(1);
 	} else {
 		printf("Enter a valid option. Select from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose bitch:");
 	}
+}
+
+void display_leaderboard(){
+	printf("\nWe don't have a leaderboard yet soz\n\n");
+	//getchar();
+	leaderboard_requested = false;
+	display_welcome();
 }
 
 int check_tile(int x, int y){
@@ -134,7 +141,6 @@ int check_tile(int x, int y){
 }
 
 void play_game(){
-	//place_mines();
 	!valid_option;
 	while (!valid_option){
 		drawboard();
@@ -160,24 +166,10 @@ void play_game(){
 					 display_welcome();
 				 }
 				 char tile_no_c = '0' + tile_no;
-				 //if (tile_no > 0){
 					 board[x_input][y_input] = tile_no_c;
-				 /*} else {
-					 while(board[x_input][y_input] == 0){
-						 check_tile(x_input-1, y_input);
-						 check_tile(x_input+1, y_input);
-						 check_tile(x_input, y_input+1);
-						 check_tile(x_input, y_input-1);
-						 check_tile(x_input-1, y_input-1);
-						 check_tile(x_input+1, y_input+1);
-						 check_tile(x_input-1, y_input+1);
-						 check_tile(x_input+1, y_input-1);
-					 }
-				 }*/
 			 } else {
 				 board[x_input][y_input] = *flag;
 			 }
-			 //drawboard();
 			 valid_option = false; //return to options
 		} else if(option_input == 'q'){
 			 game_running = false;
@@ -186,13 +178,16 @@ void play_game(){
 }
 
 int main(int argc, char *argv[]) {
-	//initialise_board();
 	srand(RANDOM_NUMBER_SEED);
-	display_menu();
+	display_login();
 	display_welcome();
-	//drawboard();
+	while(leaderboard_requested){
+		display_leaderboard();
+	}
+	
 	while(game_running){
 		play_game();
 	}
+	
   return 0;
 }
