@@ -33,10 +33,10 @@ typedef struct{
   GameState *game;
 
 bool tile_contains_mine(int x, int y){
-  if(board[x][y]!= *mine){
-  return false;
-} else {
+  if(board[x][y]== *mine){ //change to == space
   return true;
+} else {
+  return false;
 }
 }
 
@@ -94,8 +94,9 @@ void display_welcome(){
   printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose bitch:");
   scanf("%d", &menu_option);
 	if (menu_option == 1){
-		initialise_board();
+    initialise_board();
 		place_mines();
+
 	  game_running = true;
 	} else if (menu_option == 2){
 		printf("We don't have a leaderboard yet soz\n");
@@ -114,23 +115,44 @@ int check_tile(int x, int y){
 	} else {
 		if(tile_contains_mine(x+1,y)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x-1,y)) {
+		} if(tile_contains_mine(x-1,y)) {
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x,y-1)){
+		} if(tile_contains_mine(x,y-1)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x,y+1)){
+		} if(tile_contains_mine(x,y+1)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x+1,y+1)){
+		} if(tile_contains_mine(x+1,y+1)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x-1,y+1)){
+		} if(tile_contains_mine(x-1,y+1)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x+1,y-1)){
+		} if(tile_contains_mine(x+1,y-1)){
 			surrounding_tiles++;
-		} else if(tile_contains_mine(x-1,y-1)){
+		} if(tile_contains_mine(x-1,y-1)){
 			surrounding_tiles++;
 		}
 	}
 	return surrounding_tiles;
+}
+
+void reveal_tile(int x ,int y){
+  int tile_no = check_tile(x_input, y_input);
+  char tile_no_c = '0' + tile_no;
+  board[x][y] = tile_no_c;
+}
+
+void check_surrounding_tiles(int x, int y){
+  int tile_value = check_tile(x,y);
+  if (tile_value == 0){
+    reveal_tile(x+1,y);
+    reveal_tile(x-1,y-1);
+    reveal_tile(x,y-1);
+    reveal_tile(x+1,y-1);
+    reveal_tile(x-1,y);
+    reveal_tile(x+1,y);
+    reveal_tile(x-1,y+1);
+    reveal_tile(x,y+1);
+    reveal_tile(x+1,y+1);
+  }
 }
 
 void play_game(){
@@ -159,21 +181,8 @@ void play_game(){
 					 getchar();
 					 display_welcome();
 				 }
-				 char tile_no_c = '0' + tile_no;
-				 //if (tile_no > 0){
-					 board[x_input][y_input] = tile_no_c;
-				 /*} else {
-					 while(board[x_input][y_input] == 0){
-						 check_tile(x_input-1, y_input);
-						 check_tile(x_input+1, y_input);
-						 check_tile(x_input, y_input+1);
-						 check_tile(x_input, y_input-1);
-						 check_tile(x_input-1, y_input-1);
-						 check_tile(x_input+1, y_input+1);
-						 check_tile(x_input-1, y_input+1);
-						 check_tile(x_input+1, y_input-1);
-					 }
-				 }*/
+         reveal_tile(x_input, y_input);
+				 check_surrounding_tiles(x_input, y_input);
 			 } else {
 				 board[x_input][y_input] = *flag;
 			 }
