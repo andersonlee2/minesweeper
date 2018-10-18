@@ -95,8 +95,8 @@ void display_welcome(){
 		place_mines();
 	  game_running = true;
 	} else if (menu_option == 2){
-		printf("We don't have a leaderboard yet soz\n");
-
+		printf("We don't have a leaderboard yet soz\n\n");
+    display_welcome();
 	} else if (menu_option ==3){
 		exit(1);
 	} else {
@@ -173,12 +173,13 @@ void play_game(){
 	!valid_option;
 	while (!valid_option){
 		drawboard();
-			printf("%s", "\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\n Option(R,F,Q):\n\n");
-			option_input = getchar();
-			if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+		printf("%s", "\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\n Option(R,F,Q):\n\n");
+    getchar();
+    scanf("%c", &option_input);
+		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
 			  valid_option = true;
 		    }
-		}
+	}
 		if (option_input == 'r' || option_input == 'f'){
 			 printf("\nEnter x coordinate:");
 			 scanf("%d", &x_input);
@@ -196,7 +197,7 @@ void play_game(){
 					 display_welcome();
 				 }
          reveal_tile(x_input, y_input);
-				 //open_safe_tiles(x_input, y_input);
+				 open_safe_tiles(x_input, y_input);
 			 } else {
 				 client_board[x_input][y_input] = *flag;
 			 }
@@ -209,13 +210,12 @@ void play_game(){
 }
 
 int main(int argc, char *argv[]) {
-	//initialise_board();
 	srand(RANDOM_NUMBER_SEED);
 	display_menu();
 	display_welcome();
-	//drawboard();
 	while(game_running){
 		play_game();
 	}
+
   return 0;
 }
