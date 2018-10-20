@@ -14,7 +14,7 @@ char client_board[NUM_TILES_X][NUM_TILES_Y];
 char *mine = "*";
 char *revealed = "x";
 char *flag = "+";
-int mine_positions[NUM_MINES][2];
+int mine_positions[NUM_MINES][2], remaining_mines =10;
 int x_input, y_input, menu_option;
 
 char option_input;
@@ -54,14 +54,14 @@ void initialise_board(){
 void drawboard(){
   int i, j;
   char *p = ".";
-  printf("%s","  012345678\n 0");
+  printf("%s","   012345678\n   =========\n 0|");
   for (i=0; i< NUM_TILES_X; i++){
     for (j=0; j< NUM_TILES_Y ; j++){
 
       printf("%c",client_board[j][i]);
     }
     if(i<NUM_TILES_Y -1){
-    printf("\n %d", i+1);
+    printf("\n %d|", i+1);
   }
   }
   printf("\n");
@@ -140,25 +140,39 @@ void open_safe_tiles(int x, int y){
   //initialise linked list for 0 tiles
   int tile_value = check_tile(x,y);
   if (tile_value == 0){
+  int adjacent_zeros = 0;
     reveal_tile(x-1,y);
-    //tile_value = check_tile(x-1,y);
-    //if(tile_value > 0){
-      //add to linked list storing 0 tiles
-    //}
+    if (check_tile(x-1,y) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x+1,y);
-    //tile_value = check_tile(x+1,y);
+    if (check_tile(x+1,y) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x,y-1);
-    //tile_value = check_tile(x,y-1);
+    if (check_tile(x,y-1) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x,y+1);
-    //tile_value = check_tile(x,y+1);
+    if (check_tile(x,y+1) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x-1,y+1);
-    //tile_value = check_tile(x-1,y+1);
+    if (check_tile(x-1,y+1) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x-1,y-1);
-    //tile_value = check_tile(x-1,y-1);
+    if (check_tile(x-1,y-1) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x+1,y+1);
-    //tile_value = check_tile(x+1,y+1);
+    if (check_tile(x+1,y+1) == 0){
+      adjacent_zeros++;
+    }
     reveal_tile(x+1,y-1);
-    //tile_value = check_tile(x+1,y-1);
+    if (check_tile(x+1,y-1) == 0){
+      adjacent_zeros++;
+    }
   }
 }
 
@@ -173,7 +187,8 @@ void play_game(){
 	!valid_option;
 	while (!valid_option){
 		drawboard();
-		printf("%s", "\nChoose an option:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\n Option(R,F,Q):\n\n");
+    printf("\n%d mines left\n", remaining_mines);
+		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
     getchar();
     scanf("%c", &option_input);
 		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
@@ -183,7 +198,7 @@ void play_game(){
 		if (option_input == 'r' || option_input == 'f'){
 			 printf("\nEnter x coordinate:");
 			 scanf("%d", &x_input);
-			 printf("\nEnter y coordinate:");
+			 printf("Enter y coordinate:");
 			 scanf("%d", &y_input);
 			 if(option_input == 'r'){
 				 int tile_no = check_tile(x_input, y_input);
@@ -199,7 +214,19 @@ void play_game(){
          reveal_tile(x_input, y_input);
 				 open_safe_tiles(x_input, y_input);
 			 } else {
-				 client_board[x_input][y_input] = *flag;
+          if(server_board[x_input][y_input] == *mine){
+            server_board[x_input][y_input] = *flag; //fix
+            client_board[x_input][y_input] = *flag;
+           remaining_mines--;
+         } else if(client_board[x_input][y_input] == *flag){
+           printf("\nYou have already flagged this tile\n");
+         } else {
+           printf("\nNo mine there try again\n");
+         }
+         if(remaining_mines == 0){
+           printf("Ya won dingus :D\n");
+           game_running = false;
+         }
 			 }
 			 //drawboard();
 			 valid_option = false; //return to options
