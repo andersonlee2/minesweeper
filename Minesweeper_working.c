@@ -150,7 +150,9 @@ void display_welcome(){
 void reveal_tile(int x ,int y){
   int tile_no = check_tile(x, y);
   char tile_no_c = '0' + tile_no;
-  client_board[x][y] = tile_no_c;
+  if(is_valid(x,y)){
+    client_board[x][y] = tile_no_c;
+  }
 }
 
 void open_safe_tiles(int x, int y){
