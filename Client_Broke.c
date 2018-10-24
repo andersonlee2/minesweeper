@@ -17,18 +17,14 @@
 #define PORT 12345
 
 
-void login(int socket_id){
+void display_login(int socket_id){
 	char username[30];
 	char password[30];
 	char select[20];
 	int a;
 
 	// Login page
-	printf("============================================\n");
-	printf("Welcome to online minesweeper gaming system.\n");
-	printf("============================================\n");
-	printf("You are required to login with your registerd username and password.\n");
-	printf("Username: ");
+	printf("Enter username and password\nUsername: ");
 	scanf("%s", username);
 	fflush(stdin);
 	printf("Password: ");
@@ -40,31 +36,28 @@ void login(int socket_id){
 
 }
 
-void menu(int socket_id){
-	int select;
-	uint16_t stats;
+void display_welcome(int socket_id){
+	int menu_option;
+	uint16_t selection;
 
-	// Game menu
-	printf("\nWelcome to the Minesweeper Gaming system.\n");
-	printf("\nPlease enter a selection:\n");
-	printf("<1>: Play Minesweeper\n");
-	printf("<2>: Show Leaderboard\n");
-	printf("<3>: Quit\n");
-	printf("Selection option (1-3): ");
-	scanf("%d", &select);
-	//printf("%d\n", select );
-	stats = htons(select);
-	//printf("%d\n", stats);
+  printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose your option:");
+  scanf("%d", &menu_option);
 
-	// Send selection to Server
-	send(socket_id, &stats, sizeof(uint16_t), 0);
-	if (select = 3) {
-		printf("Goodbye...\n");
+	selection = htons(menu_option);
+	send(socket_id, &selection, sizeof(uint16_t), 0);
+
+	if (menu_option == 1){
+		send(socket_id, menu_option, 20, 0);
+	} else if (menu_option == 2){
+		printf("We don't have a leaderboard yet soz\n\n");
+    display_welcome(socket_id);
+	} else if (menu_option ==3){
+		printf("Disconnecting...\n");
 		close(socket_id);
 		exit(1);
+	} else {
+		printf("Enter a valid option. Select from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose:");
 	}
-	close(socket_id);
-
 }
 
 int main(int argc, char *argv[]) {
@@ -106,15 +99,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Display login page
-  login(sockfd);
+  display_login(sockfd);
 	// Display game menu
 	recv(sockfd, &stats, sizeof(uint16_t), 0);
 	int a = ntohs(stats);
   if(a == 1){
-		menu(sockfd);
+		display_welcome(sockfd);
   }else if(a == 0){
 		printf("Incorrect Username or Password. Disconnecting...\n");
-		return 0;
+		close(sockfd);
 	}
 
 	close(sockfd);
