@@ -27,14 +27,14 @@
 
 char server_board[NUM_TILES_X][NUM_TILES_Y];
 char client_board[NUM_TILES_X][NUM_TILES_Y];
-char * test_board[NUM_TILES_X][NUM_TILES_Y];
 char *mine = "*";
 char *revealed = "x";
 char *flag = "+";
 char *space = "-";
 //char option_input;
 
-int mine_positions[NUM_MINES][2], remaining_mines = NUM_MINES;
+int mine_positions[NUM_MINES][2];
+int remaining_mines = NUM_MINES;
 int x_input, y_input, menu_option;
 
 bool valid_option, game_running;
@@ -53,7 +53,6 @@ void initialise_client_board(){
 	    for (int j=0; j< NUM_TILES_Y ; j++){
 	    	client_board[j][i]= *space;
         server_board[j][i]= *space;
-        *test_board[j][i] = 'o';
 	    }
 	}
 }
@@ -62,9 +61,8 @@ void drawboard(int socket_id){
   char tile;
   for (int i=0; i< NUM_TILES_X; i++){
     for (int j=0; j< NUM_TILES_Y ; j++){
-      printf("%c\n", client_board[j][i]);
       tile = client_board[j][i];
-      send(socket_id, &tile, 9,0);
+      send(socket_id, &tile, 1,0);
     }
   }
 }
@@ -134,18 +132,18 @@ void display_welcome(int socket_id){
 
   recv(socket_id, &status, sizeof(uint16_t),0);
   menu_option = ntohs(status);
-  printf("Client has selected %d\n", menu_option);
-  printf("test");
+  fflush(stdin);
+  printf("Client has selected option %d\n", menu_option);
 	if (menu_option == 1){
+    printf("In game...\n");
     initialise_client_board();
 		place_mines();
     initialise_server_board();
-	  //game_running = true;
-    drawboard(socket_id);
+	  game_running = true;
 	} else if (menu_option == 2){
 		printf("We don't have a leaderboard yet soz\n\n");
 	}
-  close(socket_id);
+  //close(socket_id);
 }
 
 void display_login(int socket_id){
@@ -167,7 +165,7 @@ void display_login(int socket_id){
 
    	 // Open one file for reading
    	if((f = fopen("Authentication.txt", "r")) == NULL){
-		perror("NO file");
+		perror("Authentcation file not found");
 	}
 
 	// Compare Input with Authentication.txt
@@ -182,14 +180,14 @@ void display_login(int socket_id){
 			status = htons(match);
 			//printf("stats = %d\n",stats);
 			send(socket_id, &status, sizeof(uint16_t) , 0);
-			display_welcome(socket_id);
+			//display_welcome(socket_id);
 		}
 	}
 
-	printf("Invalid Credentials, termiate connection\n");
+	//printf("Invalid Credentials, Disconnecting\n");
  	fclose(f);
 	close(socket_id);
-	//send(socket_id, &status, sizeof(uint16_t) , 0);
+	send(socket_id, &status, sizeof(uint16_t) , 0);
 }
 
 void reveal_tile(int x ,int y){
@@ -252,36 +250,45 @@ void reveal_mines(){
   }
 }
 
-/*void play_game(){
+void play_game(int socket_id){
   char option_input;
-  uint16_t status;
+  int x_input;
+  int y_input;
+  int outcome;
+  uint16_t statusMines;
+  uint16_t statusX;
+  uint16_t statusY;
+  uint16_t statusOutcome;
 
-	!valid_option;
-	while (!valid_option){
-		drawboard();
+  game_running == true;
+  while (game_running){
+		drawboard(socket_id);
+    statusMines = htons(remaining_mines);
+    send(socket_id, &statusMines, sizeof(uint16_t),0); //send no. of mines
     printf("\n%d mines left\n", remaining_mines);
-		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
-    getchar();
-    scanf("%c", &option_input);
-		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
-			  valid_option = true;
-		}
-	}
+
+    recv(socket_id, &option_input, 1,0); //recieve option input
+		printf("Client has chosen: %c",option_input);
+
   if (option_input == 'r' || option_input == 'f'){
-	   printf("\nEnter x coordinate:");
-     scanf("%d", &x_input);
-		 printf("Enter y coordinate:");
-		 scanf("%d", &y_input);
+     recv(socket_id, &statusX, 1,0);
+     x_input = ntohs(statusX);
+	   printf("\nx value received: %d", x_input);
+     recv(socket_id, &statusY, 1,0);
+     y_input = ntohs(statusY);
+		 printf("y value received: %d", y_input);
 		 if(option_input == 'r'){
        int tile_no = check_tile(x_input, y_input);
 			 if (tile_no == -1){
            reveal_mines();
 					 client_board[x_input][y_input] = *revealed;
-					 drawboard();
-					 printf("You have revealed a mine! Game over :(\n\n");
-					 game_running = false;
-					 getchar();
-					 display_welcome();
+           outcome = -1;
+           statusOutcome = htons(outcome);
+           send(socket_id, &statusOutcome, sizeof(uint16_t),0);
+					 drawboard(socket_id);
+					 printf("Mine revealed, Game over!\n\n");
+					 display_welcome(socket_id);
+           game_running = false;
 			 }
        reveal_tile(x_input, y_input);
 			 open_safe_tiles(x_input, y_input);
@@ -300,12 +307,9 @@ void reveal_mines(){
            game_running = false;
          }
 			 }
-			 valid_option = false; //return to options
-		} else if(option_input == 'q'){
-			 game_running = false;
-			 display_welcome();
 		}
-}*/
+  }
+}
 
 void handle_sigint(int sig){
 	printf(" Disconnecting from server. Goodbye...\n");
@@ -377,28 +381,18 @@ int main(int argc, char *argv[]) {
   			perror("accept");
   			continue;
   		}
-  		printf("server: got connection from %s\n", \
+  		printf("Connection from %s establised\n", \
   			inet_ntoa(their_addr.sin_addr));
 
-  		//Create a thread to accept client
-/*
-  		pthread_attr_t attr;
-  		pthread_attr_init(&attr);
-  		pthread_create(&client_thread, &attr, recieve, new_fd);
-
-  		pthread_join(client_thread,NULL);
-
-  		*/
           display_login(new_fd);
           display_welcome(new_fd);
-          //while(game_running){
-            //play_game();
-          //}
-          initialise_client_board();
-          drawboard(new_fd);
+          while(game_running){
+            play_game(new_fd);
+          }
+
   	}
 
-  	close(new_fd);
+  	//close(new_fd);
 
 
   return 0;

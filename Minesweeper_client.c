@@ -28,10 +28,9 @@ char *mine = "*";
 char *revealed = "x";
 char *flag = "+";
 char *space = "-";
-char option_input;
 
-int mine_positions[NUM_MINES][2], remaining_mines = NUM_MINES;
-int x_input, y_input, menu_option;
+int mine_positions[NUM_MINES][2];
+int menu_option;
 
 bool valid_option, game_running;
 bool tile_revealed[NUM_TILES_X][NUM_TILES_Y];
@@ -57,12 +56,15 @@ void drawboard(int socket_id){
   char tile;
   printf("%s","   012345678\n   =========\n 0|");
   for (int i=0; i< NUM_TILES_X; i++){
-      recv(socket_id, &tile,1,0);
+    for (int j=0; j< NUM_TILES_Y ; j++){
+      recv(socket_id, &tile, 1,0);
       printf("%c",tile);
+      fflush(stdin);
+    }
     if(i<NUM_TILES_Y -1){
       printf("\n %d|", i+1);
     }
-  }
+}
   printf("\n");
 }
 
@@ -94,6 +96,7 @@ void display_welcome(int socket_id){
 
 	if (menu_option == 1 || menu_option == 2){
     send(socket_id, &status, sizeof(uint16_t), 0);
+    game_running =true;
 	} else if (menu_option ==3){
     printf("Quitting adios!\n");
     close(socket_id);
@@ -103,59 +106,6 @@ void display_welcome(int socket_id){
 	}
 }
 
-/*void reveal_tile(int x ,int y){
-  int tile_no = check_tile(x, y);
-  char tile_no_c = '0' + tile_no;
-  if(is_valid(x,y)){
-    client_board[x][y] = tile_no_c;
-  }
-}*/
-
-/*void open_safe_tiles(int x, int y){
-  if ((check_tile(x,y)) == 0){
-    reveal_tile(x-1,y);
-    if (server_board[x-1][y] == '0' && tile_revealed[x-1][y] == false && is_valid(x-1,y)){
-        tile_revealed[x-1][y] = true;
-        open_safe_tiles(x-1,y);
-      }
-      reveal_tile(x,y+1);
-      if (server_board[x][y+1] == '0' && tile_revealed[x][y+1] == false && is_valid(x,y+1)){
-        tile_revealed[x][y+1] = true;
-        open_safe_tiles(x,y+1);
-      }
-      reveal_tile(x,y-1);
-      if (server_board[x][y-1] == '0' && tile_revealed[x][y-1] == false && is_valid(x,y-1)){
-        tile_revealed[x][y-1] = true;
-        open_safe_tiles(x,y-1);
-      }
-      reveal_tile(x+1,y);
-      if (server_board[x+1][y] == '0' && tile_revealed[x+1][y] == false && is_valid(x+1,y)){
-        tile_revealed[x+1][y] = true;
-        open_safe_tiles(x+1,y);
-      }
-      reveal_tile(x-1,y-1);
-      if (server_board[x-1][y-1] == '0'  && tile_revealed[x-1][y-1] == false && is_valid(x-1,y-1)){
-        tile_revealed[x-1][y-1] = true;
-        open_safe_tiles(x-1,y-1);
-      }
-      reveal_tile(x+1,y-1);
-      if (server_board[x+1][y-1] == '0' && tile_revealed[x+1][y-1] == false && is_valid(x+1,y-1)){
-        tile_revealed[x+1][y-1] = true;
-        open_safe_tiles(x+1,y-1);
-      }
-      reveal_tile(x+1,y+1);
-      if (server_board[x+1][y+1] == '0'  && tile_revealed[x+1][y+1] == false && is_valid(x+1,y+1)){
-        tile_revealed[x+1][y+1] = true;
-        open_safe_tiles(x+1,y+1);
-      }
-      reveal_tile(x-1,y+1);
-      if (server_board[x-1][y+1] == '0'  && tile_revealed[x-1][y+1] == false && is_valid(x-1,y+1)){
-        tile_revealed[x-1][y+1] = true;
-        open_safe_tiles(x-1,y+1);
-      }
-  }
-}*/
-
 void reveal_mines(){
   int x, y;
   for (int i=0; i< NUM_MINES; i++){
@@ -163,10 +113,22 @@ void reveal_mines(){
   }
 }
 
-/*void play_game(int sockfd){
+void play_game(int sockfd){
+  char option_input;
+  int remaining_mines;
+  int x_input;
+  int y_input;
+  int outcome;
+  uint16_t statusMines;
+  uint16_t statusX;
+  uint16_t statusY;
+  uint16_t statusOutcome;
+
 	!valid_option;
 	while (!valid_option){
 		drawboard(sockfd);
+    recv(sockfd, &statusMines, sizeof(uint16_t),0); //receive no. of mines
+    remaining_mines = ntohs(statusMines);
     printf("\n%d mines left\n", remaining_mines);
 		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
     getchar();
@@ -175,45 +137,34 @@ void reveal_mines(){
 			  valid_option = true;
 		}
 	}
+  send(sockfd, &option_input,1,0); //send option input
   if (option_input == 'r' || option_input == 'f'){
 	   printf("\nEnter x coordinate:");
      scanf("%d", &x_input);
+     statusX = htons(x_input);
+     send(sockfd, &statusX, sizeof(uint16_t),0);
 		 printf("Enter y coordinate:");
 		 scanf("%d", &y_input);
-		 if(option_input == 'r'){
-       int tile_no = check_tile(x_input, y_input);
-			 if (tile_no == -1){
-           reveal_mines();
-					 client_board[x_input][y_input] = *revealed;
-					 drawboard(sockfd);
-					 printf("You have revealed a mine! Game over :(\n\n");
-					 game_running = false;
-					 getchar();
-					 display_welcome(sockfd);
-			 }
-       reveal_tile(x_input, y_input);
-			 open_safe_tiles(x_input, y_input);
-		   } else {
-         if(server_board[x_input][y_input] == *mine){
-            server_board[x_input][y_input] = *flag; //fix
-            client_board[x_input][y_input] = *flag;
-           remaining_mines--;
-         } else if(client_board[x_input][y_input] == *flag){
-           printf("\nYou have already flagged this tile\n");
-         } else {
-           printf("\nNo mine there try again\n");
-         }
-         if(remaining_mines == 0){
-           printf("Ya won dingus :D\n");
-           game_running = false;
-         }
-			 }
-			 valid_option = false; //return to options
-		} else if(option_input == 'q'){
+     statusY = htons(y_input);
+     send(sockfd, &statusY, sizeof(uint16_t),0);
+
+     recv(sockfd, &statusOutcome, sizeof(uint16_t),0);
+     outcome = ntohs(statusOutcome);
+     if (outcome == -1){ //mine revealed game over
+       drawboard(sockfd);
+       printf("You have revealed a mine! Game over :(\n\n");
+       game_running = false;
+       getchar();
+       display_welcome(sockfd);
+     } else if(outcome == 0){ //safe tile clicked
+
+     }
+		 valid_option = false; //return to options
+		}if(option_input == 'q'){
 			 game_running = false;
 			 display_welcome(sockfd);
 		}
-}*/
+}
 
 int main(int argc, char *argv[]) {
   int sockfd, numbytes, port, i=0;
@@ -258,18 +209,17 @@ int main(int argc, char *argv[]) {
   display_login(sockfd);
 	// Display game menu
 	recv(sockfd, &stats, sizeof(uint16_t), 0);
-	int a = ntohs(stats);
-  if(a == 1){
+	int match = ntohs(stats);
+  if(match == 1){
 		display_welcome(sockfd);
-  }else if(a == 0){
+  }else if(match == 0){
 		printf("Incorrect Username or Password. Disconnecting...\n");
-		return 0;
+		close(sockfd);
 	}
 
-  //while(game_running){
-    //play_game();
-  //}
-  drawboard(sockfd);
+  while(game_running){
+    play_game(sockfd);
+  }
 
 	close(sockfd);
 	return 0;
