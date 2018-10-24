@@ -78,6 +78,7 @@ void place_mines(){
     mine_positions[i][0] = x;
     mine_positions[i][1] = y;
     server_board[x][y] = *mine;
+    remaining_mines = NUM_MINES;
   }
 }
 
@@ -162,35 +163,35 @@ void open_safe_tiles(int x, int y){
         tile_revealed[x-1][y] = true;
         open_safe_tiles(x-1,y);
       }
-      reveal_tile(x-1,y-1);
-      if (server_board[x-1][y-1] == '0'  && tile_revealed[x-1][y-1] == false && is_valid(x-1,y-1)){
-        tile_revealed[x-1][y-1] = true;
-        open_safe_tiles(x-1,y-1);
+      reveal_tile(x,y+1);
+      if (server_board[x][y+1] == '0' && tile_revealed[x][y+1] == false && is_valid(x,y+1)){
+        tile_revealed[x][y+1] = true;
+        open_safe_tiles(x,y+1);
       }
       reveal_tile(x,y-1);
       if (server_board[x][y-1] == '0' && tile_revealed[x][y-1] == false && is_valid(x,y-1)){
         tile_revealed[x][y-1] = true;
         open_safe_tiles(x,y-1);
       }
-      reveal_tile(x+1,y-1);
-      if (server_board[x+1][y-1] == '0' && tile_revealed[x+1][y-1] == false && is_valid(x+1,y-1)){
-        tile_revealed[x+1][y-1] = true;
-        open_safe_tiles(x+1,y-1);
-      }
       reveal_tile(x+1,y);
       if (server_board[x+1][y] == '0' && tile_revealed[x+1][y] == false && is_valid(x+1,y)){
         tile_revealed[x+1][y] = true;
         open_safe_tiles(x+1,y);
       }
+      reveal_tile(x-1,y-1);
+      if (server_board[x-1][y-1] == '0'  && tile_revealed[x-1][y-1] == false && is_valid(x-1,y-1)){
+        tile_revealed[x-1][y-1] = true;
+        open_safe_tiles(x-1,y-1);
+      }
+      reveal_tile(x+1,y-1);
+      if (server_board[x+1][y-1] == '0' && tile_revealed[x+1][y-1] == false && is_valid(x+1,y-1)){
+        tile_revealed[x+1][y-1] = true;
+        open_safe_tiles(x+1,y-1);
+      }
       reveal_tile(x+1,y+1);
       if (server_board[x+1][y+1] == '0'  && tile_revealed[x+1][y+1] == false && is_valid(x+1,y+1)){
         tile_revealed[x+1][y+1] = true;
         open_safe_tiles(x+1,y+1);
-      }
-      reveal_tile(x,y+1);
-      if (server_board[x][y-1] == '0' && tile_revealed[x][y-1] == false && is_valid(x,y-1)){
-        tile_revealed[x][y+1] = true;
-        open_safe_tiles(x,y+1);
       }
       reveal_tile(x-1,y+1);
       if (server_board[x-1][y+1] == '0'  && tile_revealed[x-1][y+1] == false && is_valid(x-1,y+1)){
