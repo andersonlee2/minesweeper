@@ -67,6 +67,7 @@ void drawboard(int socket_id){
     }
 }
   printf("\n");
+  fflush(stdin);
 }
 
 void display_welcome(int socket_id){
@@ -115,6 +116,7 @@ void display_login(int socket_id){
 		printf("Incorrect Username or Password. Disconnecting...\n");
 		close(socket_id);
 	}
+  fflush(stdin);
 }
 
 void reveal_mines(){
@@ -131,50 +133,59 @@ void play_game(int sockfd){
   int y_input;
   int outcome;
   uint16_t status;
+  while(game_running){
+	  !valid_option;
+	  	while (!valid_option){
+	  		drawboard(sockfd);
+	  		fflush(stdin);
+	  		recv(sockfd, &status, sizeof(uint16_t),0); //receive no. of mines
+	  		int remaining_mines = ntohs(status);
+	  		printf("\n%d mines left\n", remaining_mines);
+	  		fflush(stdin);
+	  		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
+	  		getchar();
+	  		scanf("%c", &option_input);
+	      
+	  		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+	  			 send(sockfd, &option_input,1,0); //send option input
+	  			 fflush(stdin);
+	  			 valid_option = true;
+	  		} else {
+	  			printf("Choose a valid move:");
+	  		}
+	  	}
 
-	//!valid_option;
-	//while (!valid_option){
-		drawboard(sockfd);
-    //fflush(stdin);
-    recv(sockfd, &status, sizeof(uint16_t),0); //receive no. of mines
-    int remaining_mines = ntohs(status);
-    printf("\n%d mines left\n", remaining_mines);
-    //fflush(stdin);
-		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
-    getchar();
-    scanf("%c", &option_input);
-    send(sockfd, &option_input,1,0); //send option input
-		//if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
-			  //valid_option = true;
-		//}
-	//}
+	    if (option_input == 'r' || option_input == 'f'){
+	  	printf("\nEnter x coordinate:");
+	      scanf("%d", &x_input);
+	      fflush(stdin);
+	  	printf("Enter y coordinate:");
+	  	scanf("%d", &y_input);
+	  	status = htons(x_input);
+	  	send(sockfd, &status, sizeof(uint16_t),0);
+	      fflush(stdin);
+	      status = htons(y_input);
+	      send(sockfd, &status, sizeof(uint16_t),0);
+	      fflush(stdin);
 
-  if (option_input == 'r' || option_input == 'f'){
-	   printf("\nEnter x coordinate:");
-     scanf("%d", &x_input);
-     status = htons(x_input);
-     send(sockfd, &status, sizeof(uint16_t),0);
-		 printf("Enter y coordinate:");
-		 scanf("%d", &y_input);
-     status = htons(y_input);
-     send(sockfd, &status, sizeof(uint16_t),0);
+	       recv(sockfd, &status, sizeof(uint16_t),0);
+	       outcome = ntohs(status);
+	       if (outcome == -1){ //mine revealed game over
+	         drawboard(sockfd);
+	         printf("You have revealed a mine! Game over :(\n\n");
+	         game_running = false;
+	         getchar();
+	         display_welcome(sockfd);
+	       } else if(outcome == 0){ //safe tile clicked
 
-     recv(sockfd, &status, sizeof(uint16_t),0);
-     outcome = ntohs(status);
-     if (outcome == -1){ //mine revealed game over
-       drawboard(sockfd);
-       printf("You have revealed a mine! Game over :(\n\n");
-       game_running = false;
-       getchar();
-       display_welcome(sockfd);
-     } else if(outcome == 0){ //safe tile clicked
-
-     }
-		 valid_option = false; //return to options
-		}if(option_input == 'q'){
-			 game_running = false;
-			 display_welcome(sockfd);
-		}
+	       }
+	  		 valid_option = false; //return to options
+	  		}if(option_input == 'q'){
+	  			 game_running = false;
+	  			 display_welcome(sockfd);
+	  		}
+  }
+	
 }
 
 int main(int argc, char *argv[]) {
@@ -215,9 +226,10 @@ int main(int argc, char *argv[]) {
 		perror("connect");
 		exit(1);
 	}
+	
 	// Display login page
-  drawboard(sockfd);
   display_login(sockfd);
+  
   //while(game_running){
     play_game(sockfd);
   //}
