@@ -22,36 +22,7 @@
 #define RETURNED_ERROR -1
 #define PORT 12345
 
-char server_board[NUM_TILES_X][NUM_TILES_Y];
-char client_board[NUM_TILES_X][NUM_TILES_Y];
-char *mine = "*";
-char *revealed = "x";
-char *flag = "+";
-char *space = "-";
-char option_input;
-
-int mine_positions[NUM_MINES][2];
-int menu_option;
-
-bool valid_option, game_running;
-bool tile_revealed[NUM_TILES_X][NUM_TILES_Y];
-
-bool tile_contains_mine(int x, int y){
-  if(server_board[x][y]== *mine){ //change to == space
-    return true;
-  } else {
-    return false;
-  }
-}
-
-void initialise_client_board(){
-	for (int i=0; i< NUM_TILES_X; i++){
-	    for (int j=0; j< NUM_TILES_Y ; j++){
-	    	client_board[j][i]= *space;
-        server_board[j][i]= *space;
-	    }
-	}
-}
+bool game_running;
 
 void drawboard(int socket_id){
   char tile;
@@ -82,7 +53,7 @@ void display_welcome(int socket_id){
     send(socket_id, &status, sizeof(uint16_t), 0);
     game_running =true;
 	} else if (menu_option ==3){
-    printf("Quitting adios!\n");
+    printf("Disconnecting.. Adios!\n");
     close(socket_id);
 		exit(1);
 	} else {
@@ -119,33 +90,31 @@ void display_login(int socket_id){
   fflush(stdin);
 }
 
-void reveal_mines(){
-  int x, y;
-  for (int i=0; i< NUM_MINES; i++){
-    client_board[mine_positions[i][0]][mine_positions[i][1]] = *mine;
-  }
-}
-
 void play_game(int sockfd){
-
-  //int remaining_mines;
+  char option_input;
   int x_input;
   int y_input;
   int outcome;
+  bool valid_option;
   uint16_t status;
+
   while(game_running){
 	  !valid_option;
 	  	while (!valid_option){
+        fflush(stdin);
+
+        //receive board and no. of mines
 	  		drawboard(sockfd);
 	  		fflush(stdin);
-	  		recv(sockfd, &status, sizeof(uint16_t),0); //receive no. of mines
+	  		recv(sockfd, &status, sizeof(uint16_t),0);
 	  		int remaining_mines = ntohs(status);
 	  		printf("\n%d mines left\n", remaining_mines);
 	  		fflush(stdin);
+
+        //Prompt for option input
 	  		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
 	  		getchar();
 	  		scanf("%c", &option_input);
-	      
 	  		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
 	  			 send(sockfd, &option_input,1,0); //send option input
 	  			 fflush(stdin);
@@ -168,16 +137,16 @@ void play_game(int sockfd){
 	      send(sockfd, &status, sizeof(uint16_t),0);
 	      fflush(stdin);
 
-	       recv(sockfd, &status, sizeof(uint16_t),0);
-	       outcome = ntohs(status);
+        //Receive outcome integer
+	      recv(sockfd, &status, sizeof(uint16_t),0);
+	      outcome = ntohs(status);
+        fflush(stdin);
 	       if (outcome == -1){ //mine revealed game over
 	         drawboard(sockfd);
 	         printf("You have revealed a mine! Game over :(\n\n");
 	         game_running = false;
 	         getchar();
 	         display_welcome(sockfd);
-	       } else if(outcome == 0){ //safe tile clicked
-
 	       }
 	  		 valid_option = false; //return to options
 	  		}if(option_input == 'q'){
@@ -185,7 +154,6 @@ void play_game(int sockfd){
 	  			 display_welcome(sockfd);
 	  		}
   }
-	
 }
 
 int main(int argc, char *argv[]) {
@@ -208,13 +176,12 @@ int main(int argc, char *argv[]) {
 
  	if (argc > 2){
 		port = atoi(argv[2]);
-	}else port = PORT;
+	} else port = PORT;
 
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		perror("socket");
 		exit(1);
 	}
-
 
 	their_addr.sin_family = AF_INET;      /* host byte order */
 	their_addr.sin_port = htons(port);    /* short, network byte order */
@@ -226,13 +193,11 @@ int main(int argc, char *argv[]) {
 		perror("connect");
 		exit(1);
 	}
-	
+
 	// Display login page
   display_login(sockfd);
-  
-  //while(game_running){
-    play_game(sockfd);
-  //}
+
+  play_game(sockfd);
 
 	close(sockfd);
 	return 0;
