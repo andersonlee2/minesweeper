@@ -28,6 +28,7 @@ char *mine = "*";
 char *revealed = "x";
 char *flag = "+";
 char *space = "-";
+char option_input;
 
 int mine_positions[NUM_MINES][2];
 int menu_option;
@@ -59,31 +60,13 @@ void drawboard(int socket_id){
     for (int j=0; j< NUM_TILES_Y ; j++){
       recv(socket_id, &tile, 1,0);
       printf("%c",tile);
-      fflush(stdin);
+      //fflush(stdin);
     }
     if(i<NUM_TILES_Y -1){
       printf("\n %d|", i+1);
     }
 }
   printf("\n");
-}
-
-void display_login(int socket_id){
-  char username[30];
-	char password[30];
-	char select[20];
-	int a;
-
-  printf("Enter login details:\n");
-	printf("Username: ");
-	scanf("%s", username);
-	fflush(stdin);
-	printf("Password: ");
-	scanf("%s", password);
-
-	// Send Username and Password to Server
-	send(socket_id, username, 20, 0);
-	send(socket_id, password, 20, 0);
 }
 
 void display_welcome(int socket_id){
@@ -102,7 +85,35 @@ void display_welcome(int socket_id){
     close(socket_id);
 		exit(1);
 	} else {
-		printf("Enter a valid option. Select from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose:");
+		printf("\nEnter a valid option:\n Select from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose:");
+	}
+}
+
+void display_login(int socket_id){
+  char username[30];
+	char password[30];
+	char select[20];
+	int match;
+  uint16_t status;
+
+  printf("Enter login details:\n");
+	printf("Username: ");
+	scanf("%s", username);
+	fflush(stdin);
+	printf("Password: ");
+	scanf("%s", password);
+
+	// Send Username and Password to Server
+	send(socket_id, username, 20, 0);
+	send(socket_id, password, 20, 0);
+
+  recv(socket_id, &status, sizeof(uint16_t), 0);
+  match = ntohs(status);
+  if(match == 1){
+		display_welcome(socket_id);
+  }else if(match == 0){
+		printf("Incorrect Username or Password. Disconnecting...\n");
+		close(socket_id);
 	}
 }
 
@@ -114,42 +125,42 @@ void reveal_mines(){
 }
 
 void play_game(int sockfd){
-  char option_input;
-  int remaining_mines;
+
+  //int remaining_mines;
   int x_input;
   int y_input;
   int outcome;
-  uint16_t statusMines;
-  uint16_t statusX;
-  uint16_t statusY;
-  uint16_t statusOutcome;
+  uint16_t status;
 
-	!valid_option;
-	while (!valid_option){
+	//!valid_option;
+	//while (!valid_option){
 		drawboard(sockfd);
-    recv(sockfd, &statusMines, sizeof(uint16_t),0); //receive no. of mines
-    remaining_mines = ntohs(statusMines);
+    //fflush(stdin);
+    recv(sockfd, &status, sizeof(uint16_t),0); //receive no. of mines
+    int remaining_mines = ntohs(status);
     printf("\n%d mines left\n", remaining_mines);
+    //fflush(stdin);
 		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
     getchar();
     scanf("%c", &option_input);
-		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
-			  valid_option = true;
-		}
-	}
-  send(sockfd, &option_input,1,0); //send option input
+    send(sockfd, &option_input,1,0); //send option input
+		//if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+			  //valid_option = true;
+		//}
+	//}
+
   if (option_input == 'r' || option_input == 'f'){
 	   printf("\nEnter x coordinate:");
      scanf("%d", &x_input);
-     statusX = htons(x_input);
-     send(sockfd, &statusX, sizeof(uint16_t),0);
+     status = htons(x_input);
+     send(sockfd, &status, sizeof(uint16_t),0);
 		 printf("Enter y coordinate:");
 		 scanf("%d", &y_input);
-     statusY = htons(y_input);
-     send(sockfd, &statusY, sizeof(uint16_t),0);
+     status = htons(y_input);
+     send(sockfd, &status, sizeof(uint16_t),0);
 
-     recv(sockfd, &statusOutcome, sizeof(uint16_t),0);
-     outcome = ntohs(statusOutcome);
+     recv(sockfd, &status, sizeof(uint16_t),0);
+     outcome = ntohs(status);
      if (outcome == -1){ //mine revealed game over
        drawboard(sockfd);
        printf("You have revealed a mine! Game over :(\n\n");
@@ -204,22 +215,12 @@ int main(int argc, char *argv[]) {
 		perror("connect");
 		exit(1);
 	}
-
 	// Display login page
+  drawboard(sockfd);
   display_login(sockfd);
-	// Display game menu
-	recv(sockfd, &stats, sizeof(uint16_t), 0);
-	int match = ntohs(stats);
-  if(match == 1){
-		display_welcome(sockfd);
-  }else if(match == 0){
-		printf("Incorrect Username or Password. Disconnecting...\n");
-		close(sockfd);
-	}
-
-  while(game_running){
+  //while(game_running){
     play_game(sockfd);
-  }
+  //}
 
 	close(sockfd);
 	return 0;

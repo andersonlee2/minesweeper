@@ -59,10 +59,16 @@ void initialise_client_board(){
 
 void drawboard(int socket_id){
   char tile;
+  printf("%s","   012345678\n   =========\n 0|");
   for (int i=0; i< NUM_TILES_X; i++){
     for (int j=0; j< NUM_TILES_Y ; j++){
       tile = client_board[j][i];
+      fflush(stdin);
+      printf("%c",tile);
       send(socket_id, &tile, 1,0);
+    }
+    if(i<NUM_TILES_Y -1){
+      printf("\n %d|", i+1);
     }
   }
 }
@@ -176,11 +182,10 @@ void display_login(int socket_id){
 		if(strcmp(entered_username, valid_username) == 0 && strcmp(entered_password, valid_password) == 0){
 			printf("Login successful\n");
 			int match = 1;
-			//printf("a = %d\n",a);
 			status = htons(match);
-			//printf("stats = %d\n",stats);
 			send(socket_id, &status, sizeof(uint16_t) , 0);
-			//display_welcome(socket_id);
+      fflush(stdout);
+			display_welcome(socket_id);
 		}
 	}
 
@@ -250,41 +255,55 @@ void reveal_mines(){
   }
 }
 
+void delay(int number_of_seconds)
+{
+    // Converting time into milli_seconds
+    int milli_seconds = 1000 * number_of_seconds;
+
+    // Stroing start time
+    clock_t start_time = clock();
+
+    // looping till required time is not acheived
+    while (clock() < start_time + milli_seconds)
+        ;
+}
+
 void play_game(int socket_id){
   char option_input;
   int x_input;
   int y_input;
   int outcome;
-  uint16_t statusMines;
-  uint16_t statusX;
-  uint16_t statusY;
-  uint16_t statusOutcome;
+  uint16_t status;
 
-  game_running == true;
-  while (game_running){
+
+  //game_running = true;
 		drawboard(socket_id);
-    statusMines = htons(remaining_mines);
-    send(socket_id, &statusMines, sizeof(uint16_t),0); //send no. of mines
-    printf("\n%d mines left\n", remaining_mines);
-
+    status = htons(remaining_mines);
+    send(socket_id, &status, sizeof(uint16_t),0); //send no. of mines
+    //fflush(stdin);
+    printf("\nIn game with %d mines left\n", remaining_mines);
     recv(socket_id, &option_input, 1,0); //recieve option input
+    //delay(2000);
 		printf("Client has chosen: %c",option_input);
 
   if (option_input == 'r' || option_input == 'f'){
-     recv(socket_id, &statusX, 1,0);
-     x_input = ntohs(statusX);
+    //fflush(stdin);
+     recv(socket_id, &status, 1,0);
+     x_input = ntohs(status);
 	   printf("\nx value received: %d", x_input);
-     recv(socket_id, &statusY, 1,0);
-     y_input = ntohs(statusY);
+     //fflush(stdin);
+     recv(socket_id, &status, 1,0);
+     y_input = ntohs(status);
 		 printf("y value received: %d", y_input);
+     //fflush(stdin);
 		 if(option_input == 'r'){
        int tile_no = check_tile(x_input, y_input);
 			 if (tile_no == -1){
            reveal_mines();
 					 client_board[x_input][y_input] = *revealed;
            outcome = -1;
-           statusOutcome = htons(outcome);
-           send(socket_id, &statusOutcome, sizeof(uint16_t),0);
+           status = htons(outcome);
+           send(socket_id, &status, sizeof(uint16_t),0);
 					 drawboard(socket_id);
 					 printf("Mine revealed, Game over!\n\n");
 					 display_welcome(socket_id);
@@ -309,7 +328,6 @@ void play_game(int socket_id){
 			 }
 		}
   }
-}
 
 void handle_sigint(int sig){
 	printf(" Disconnecting from server. Goodbye...\n");
@@ -383,16 +401,17 @@ int main(int argc, char *argv[]) {
   		}
   		printf("Connection from %s establised\n", \
   			inet_ntoa(their_addr.sin_addr));
-
+        initialise_client_board();
+        drawboard(new_fd);
           display_login(new_fd);
-          display_welcome(new_fd);
-          while(game_running){
+
+          //while(game_running){
             play_game(new_fd);
-          }
+          //}
 
   	}
 
-  	//close(new_fd);
+  	close(new_fd);
 
 
   return 0;
