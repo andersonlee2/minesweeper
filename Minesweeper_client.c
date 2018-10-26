@@ -229,7 +229,7 @@ int main(int argc, char * argv[]) {
 
   // Display login page
   display_login(sockfd);
-  play_game(sockfds);
+  play_game(sockfd);
 
   close(sockfd);
   return 0;
