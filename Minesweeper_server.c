@@ -132,7 +132,7 @@ void initialise_server_board(){
 void display_welcome(int socket_id){
   int menu_option;
   uint16_t status;
-
+  fflush(stdin);
   recv(socket_id, &status, sizeof(uint16_t),0);
   menu_option = ntohs(status);
   fflush(stdin);
@@ -180,11 +180,14 @@ void display_login(int socket_id){
 			send(socket_id, &status, sizeof(uint16_t) , 0);
 			fflush(stdin);
 			display_welcome(socket_id);
-		}
+		} /*else {
+      match = 0;
+    }*/
 	}
-  match = 0;
+  /*if (match == 0){
   status = htons(match);
   send(socket_id, &status, sizeof(uint16_t) , 0);
+}*/
 }
 
 void reveal_tile(int x ,int y){
@@ -268,7 +271,6 @@ void play_game(int socket_id){
 
   while(game_running){
 	    fflush(stdin);
-
 	  	drawboard(socket_id);
       fflush(stdin);
 
@@ -316,26 +318,40 @@ void play_game(int socket_id){
 	      reveal_tile(x_input, y_input); //safe tile revealed
 	  		open_safe_tiles(x_input, y_input); //Open surrounding zeros
       } else if(option_input == 'f' || option_input == 'F') {
+
           //Place flag at coordinates
-          outcome = 1;
-          status = htons(outcome);
-          send(socket_id, &status, sizeof(uint16_t),0);
-          fflush(stdin);
 	         if(server_board[x_input][y_input] == *mine){
 	            server_board[x_input][y_input] = *flag;
 	             client_board[x_input][y_input] = *flag;
 	              remaining_mines--;
+                outcome = 1;
 	         } else if(client_board[x_input][y_input] == *flag){
-	            printf("\nYou have already flagged this tile\n");
+	            printf("\nClient tried to flag already flagged tile\n");
+              outcome = 2;
+              //status = htons(outcome);
+              //send(socket_id, &status, sizeof(uint16_t),0);
+              //fflush(stdin);
 	         } else {
 	            printf("\nNo mine there try again\n");
+              outcome = 3;
+              //status = htons(outcome);
+              //send(socket_id, &status, sizeof(uint16_t),0);
+              //fflush(stdin);
 	         }
 	         if(remaining_mines == 0){
-	            printf("Congratulation you've won!\n");
-	            game_running = false;
-              display_welcome(socket_id);
+             outcome = 4;
+             status = htons(outcome);
+             send(socket_id, &status, sizeof(uint16_t),0);
+             fflush(stdin);
+	           printf("Client has won the game\n");
+	           game_running = false;
+            display_welcome(socket_id);
 	         }
+           status = htons(outcome);
+           send(socket_id, &status, sizeof(uint16_t),0);
+           fflush(stdin);
 	  	  }
+        fflush(stdin);
     }
   }
 

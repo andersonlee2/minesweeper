@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <time.h>
 
 #define RANDOM_NUMBER_SEED 42
 #define NUM_TILES_X 9
@@ -44,7 +45,7 @@ void drawboard(int socket_id){
 void display_welcome(int socket_id){
   int menu_option;
   uint16_t status;
-
+  fflush(stdin);
   printf("%s","Welcome to the online Minesweeper game!\n\nSelect from the following:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\nChoose your option:");
   scanf("%d", &menu_option);
   status = htons(menu_option);
@@ -97,6 +98,8 @@ void play_game(int sockfd){
   int outcome;
   bool valid_option;
   uint16_t status;
+  clock_t start_time = clock();
+  clock_t end_time;
 
   while(game_running){
 	  !valid_option;
@@ -129,8 +132,8 @@ void play_game(int sockfd){
 	    if (option_input == 'r' || option_input == 'f' ||
        option_input == 'R' || option_input == 'F'){
 	  	printf("\nEnter x coordinate:");
-	      scanf("%d", &x_input);
-	      fflush(stdin);
+	    scanf("%d", &x_input);
+	    fflush(stdin);
 	  	printf("Enter y coordinate:");
 	  	scanf("%d", &y_input);
 	  	status = htons(x_input);
@@ -148,12 +151,24 @@ void play_game(int sockfd){
 	         drawboard(sockfd);
 	         printf("You have revealed a mine! Game over :(\n\n");
 	         game_running = false;
+           end_time = clock();
 	         getchar();
 	         display_welcome(sockfd);
-	       }
+	       } else if(outcome == 2){ //Already flagged
+           printf("\nYou have already flagged this tile\n");
+         } else if(outcome == 3){
+           printf("\nNo mine there try again\n"); //No mine at flagged
+         } else if(outcome == 4){
+           int time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+           printf("Congratulations! You cleared all the mines in %d seconds\n", time_spent);
+           game_running = false;
+           display_welcome(sockfd);
+         }
 	  		 valid_option = false; //return to options
+
 	  		}if(option_input == 'q'){
 	  			 game_running = false;
+           //end_time = clock();
 	  			 display_welcome(sockfd);
 	  		}
   }
