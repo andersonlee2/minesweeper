@@ -79,11 +79,13 @@ void display_login(int socket_id){
 	send(socket_id, username, 20, 0);
 	send(socket_id, password, 20, 0);
 
-  recv(socket_id, &status, sizeof(uint16_t), 0);
+  int a = recv(socket_id, &status, sizeof(uint16_t), 0);
   match = ntohs(status);
+  printf("status =%d", status);
+  printf("match =%d", match);
   if(match == 1){
 		display_welcome(socket_id);
-  }else if(match == 0){
+  }else /*if(match == 0)*/{
 		printf("Incorrect Username or Password. Disconnecting...\n");
 		close(socket_id);
 	}
@@ -115,16 +117,19 @@ void play_game(int sockfd){
 	  		printf("%s", "\nChoose a move:\n<R> Reveal tile\n<F> Place flag\n<Q> Quit\n\nMove(R,F,Q):");
 	  		getchar();
 	  		scanf("%c", &option_input);
-	  		if(option_input == 'r' || option_input == 'f' ||option_input == 'q'){
+	  		if(option_input == 'r' || option_input == 'f' ||option_input == 'q' ||
+           option_input == 'R' || option_input == 'F' ||option_input == 'Q'){
 	  			 send(sockfd, &option_input,1,0); //send option input
 	  			 fflush(stdin);
 	  			 valid_option = true;
 	  		} else {
-	  			printf("Choose a valid move:");
+	  			printf("Choose a valid move:\n");
+          fflush(stdin);
 	  		}
 	  	}
 
-	    if (option_input == 'r' || option_input == 'f'){
+	    if (option_input == 'r' || option_input == 'f' ||
+       option_input == 'R' || option_input == 'F'){
 	  	printf("\nEnter x coordinate:");
 	      scanf("%d", &x_input);
 	      fflush(stdin);

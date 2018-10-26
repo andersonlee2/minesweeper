@@ -153,6 +153,7 @@ void display_login(int socket_id){
   char entered_username[30];
 	char entered_password[30];
 	char select[20];
+  int auth1 = 0;
 	FILE *file;
 	char valid_username[30];
 	char valid_password[30];
@@ -179,11 +180,11 @@ void display_login(int socket_id){
 			send(socket_id, &status, sizeof(uint16_t) , 0);
 			fflush(stdin);
 			display_welcome(socket_id);
-		} else {
+		}/* else {
       int match = 0;
 			status = htons(match);
 			send(socket_id, &status, sizeof(uint16_t) , 0);
-    }
+    }*/
 	}
 }
 
@@ -295,7 +296,7 @@ void play_game(int socket_id){
       fflush(stdin);
 	    printf("\ny value received: %d\n", y_input);
 
-	  	if(option_input == 'r'){
+	  	if(option_input == 'r' || option_input == 'R'){
 	      int tile_no = check_tile(x_input, y_input);
 	  		if (tile_no == -1){ //mine revealed
 	         reveal_mines();
@@ -315,7 +316,7 @@ void play_game(int socket_id){
         fflush(stdin);
 	      reveal_tile(x_input, y_input); //safe tile revealed
 	  		open_safe_tiles(x_input, y_input); //Open surrounding zeros
-	  		} else {
+      } else if(option_input == 'f' || option_input == 'F') {
           //Place flag at coordinates
           outcome = 1;
           status = htons(outcome);
