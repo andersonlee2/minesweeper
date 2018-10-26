@@ -1,10 +1,26 @@
 //assignment
-#
-include < stdbool.h > #include < stdio.h > #include < stdlib.h > #include < time.h > #include < errno.h > #include < string.h > #include < netdb.h > #include < sys / types.h > #include < netinet / in .h > #include < sys / socket.h > #include < unistd.h > #include < stdbool.h > #include < time.h >
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <errno.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <time.h>
 
-  #define RANDOM_NUMBER_SEED 42# define NUM_TILES_X 9# define NUM_TILES_Y 9# define NUM_MINES 10
-
-# define MAXDATASIZE 100 /* max number of bytes we can get at once */ # define ARRAY_SIZE 30# define RETURNED_ERROR - 1# define PORT 12345
+#define RANDOM_NUMBER_SEED 42
+#define NUM_TILES_X 9
+#define NUM_TILES_Y 9
+#define NUM_MINES 10
+#define MAXDATASIZE 100 /* max number of bytes we can get at once */
+#define ARRAY_SIZE 30
+#define RETURNED_ERROR - 1
+#define PORT 12345
 
 bool game_running;
 
@@ -35,7 +51,11 @@ void display_welcome(int socket_id) {
 
   if (menu_option == 1 || menu_option == 2) {
     send(socket_id, & status, sizeof(uint16_t), 0);
-    game_running = true;
+    if(menu_option == 1){
+      game_running = true;
+    } else {
+      printf(" There's no leaderboard here because you don't need to compare yourself with others on the leaderboard. You're talented in you're own way <3\n");
+    }
   } else if (menu_option == 3) {
     printf("Disconnecting.. Adios!\n");
     close(socket_id);
@@ -81,9 +101,10 @@ void play_game(int sockfd) {
   int outcome;
   bool valid_option;
   uint16_t status;
-  clock_t start_time = clock();
-  clock_t end_time;
+  clock_t start_time;
+  double time_taken;
 
+  start_time = clock();
   while (game_running) {
     !valid_option;
     while (!valid_option) {
@@ -106,10 +127,10 @@ void play_game(int sockfd) {
         send(sockfd, & option_input, 1, 0); //send option input
         fflush(stdin);
         valid_option = true;
-      } else {
+      }/* else {
         printf("Choose a valid move:\n");
         fflush(stdin);
-      }
+      }*/
     }
 
     if (option_input == 'r' || option_input == 'f' ||
@@ -134,7 +155,6 @@ void play_game(int sockfd) {
         drawboard(sockfd);
         printf("You have revealed a mine! Game over :(\n\n");
         game_running = false;
-        end_time = clock();
         getchar();
         display_welcome(sockfd);
       } else if (outcome == 2) { //Already flagged
@@ -142,9 +162,10 @@ void play_game(int sockfd) {
       } else if (outcome == 3) {
         printf("\nNo mine there try again\n"); //No mine at flagged
       } else if (outcome == 4) {
-        int time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-        printf("Congratulations! You cleared all the mines in %d seconds\n", time_spent);
+        time_taken = (double)(clock() - start_time) / CLOCKS_PER_SEC;
+        printf("Congratulations! You cleared all the mines in %f seconds\n", time_taken);
         game_running = false;
+        drawboard(sockfd);
         display_welcome(sockfd);
       }
       valid_option = false; //return to options
@@ -187,7 +208,7 @@ int main(int argc, char * argv[]) {
 
   their_addr.sin_family = AF_INET; /* host byte order */
   their_addr.sin_port = htons(port); /* short, network byte order */
-  their_addr.sin_addr = * ((struct in_addr * ) he - > h_addr);
+  their_addr.sin_addr = * ((struct in_addr * ) he->h_addr);
   bzero( & (their_addr.sin_zero), 8); /* zero the rest of the struct */
 
   if (connect(sockfd, (struct sockaddr * ) & their_addr, \
@@ -198,7 +219,6 @@ int main(int argc, char * argv[]) {
 
   // Display login page
   display_login(sockfd);
-
   play_game(sockfd);
 
   close(sockfd);

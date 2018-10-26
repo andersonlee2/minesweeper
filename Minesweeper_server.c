@@ -1,9 +1,26 @@
 //assignment
-#include < stdbool.h > #include < stdio.h > #include < stdlib.h > #include < time.h >
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-  #include < arpa / inet.h > #include < errno.h > #include < string.h > #include < sys / types.h > #include < netinet / in .h > #include < sys / socket.h > #include < sys / wait.h > #include < unistd.h > #include < errno.h > #include < signal.h >
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
 
-  #define MYPORT 12345# define BACKLOG 10# define RANDOM_NUMBER_SEED 42# define NUM_TILES_X 9# define NUM_TILES_Y 9# define NUM_MINES 10
+#define MYPORT 12345
+#define BACKLOG 10
+#define RANDOM_NUMBER_SEED 42
+#define NUM_TILES_X 9
+#define NUM_TILES_Y 9
+#define NUM_MINES 10
 
 char server_board[NUM_TILES_X][NUM_TILES_Y]; //Board keeping track of mines
 char client_board[NUM_TILES_X][NUM_TILES_Y];
@@ -273,7 +290,7 @@ void play_game(int socket_id) {
     //receive option input
     recv(socket_id, & option_input, 1, 0);
     fflush(stdin);
-    printf("Client has chosen: %c", option_input);
+    printf("\nClient has chosen: %c", option_input);
 
     //recieve x input
     recv(socket_id, & status, sizeof(uint16_t), 0);
@@ -285,7 +302,7 @@ void play_game(int socket_id) {
     recv(socket_id, & status, sizeof(uint16_t), 0);
     y_input = ntohs(status);
     fflush(stdin);
-    printf("\ny value received: %d\n", y_input);
+    printf("\ny value received: %d\n\n", y_input);
 
     if (option_input == 'r' || option_input == 'R') {
       int tile_no = check_tile(x_input, y_input);
@@ -334,7 +351,13 @@ void play_game(int socket_id) {
         send(socket_id, & status, sizeof(uint16_t), 0);
         fflush(stdin);
         printf("Client has won the game\n");
+        for (int i = 0; i < NUM_TILES_X; i++) {
+          for (int j = 0; j < NUM_TILES_Y; j++) {
+            client_board[j][i] = server_board[j][i];
+          }
+        }
         game_running = false;
+        drawboard(socket_id);
         display_welcome(socket_id);
       }
       status = htons(outcome);
@@ -385,8 +408,7 @@ int main(int argc, char * argv[]) {
   /* zero the rest of the struct */
 
   /* bind the socket to the end point */
-  if (bind(sockfd, (struct sockaddr * ) & my_addr, sizeof(struct sockaddr))\ ==
-    -1) {
+  if (bind(sockfd, (struct sockaddr * ) & my_addr, sizeof(struct sockaddr)) ==-1) {
     perror("bind");
     exit(1);
   }
@@ -402,8 +424,7 @@ int main(int argc, char * argv[]) {
   //Accept connection
   while (1) {
     sin_size = sizeof(struct sockaddr_in);
-    if ((new_fd = accept(sockfd, (struct sockaddr * ) & their_addr, \ &
-        sin_size)) == -1) {
+    if ((new_fd = accept(sockfd, (struct sockaddr * ) & their_addr, &sin_size)) == -1) {
       perror("accept");
       continue;
     }
