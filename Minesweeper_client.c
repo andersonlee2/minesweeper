@@ -17,12 +17,15 @@
 #define NUM_TILES_X 9
 #define NUM_TILES_Y 9
 #define NUM_MINES 10
-#define MAXDATASIZE 100 /* max number of bytes we can get at once */
-#define ARRAY_SIZE 30
-#define RETURNED_ERROR - 1
 #define PORT 12345
 
 bool game_running;
+
+//Leaderbaord elements
+char Username[30];
+double time_taken;
+int games_won;
+int games_played;
 
 void drawboard(int socket_id) {
   char tile;
@@ -31,7 +34,6 @@ void drawboard(int socket_id) {
     for (int j = 0; j < NUM_TILES_Y; j++) {
       recv(socket_id, & tile, 1, 0);
       printf("%c", tile);
-      //fflush(stdin);
     }
     if (i < NUM_TILES_Y - 1) {
       printf("\n %d|", i + 1);
@@ -41,6 +43,7 @@ void drawboard(int socket_id) {
   fflush(stdin);
 }
 
+//Displays options for users after successfully authenticatiing
 void display_welcome(int socket_id) {
   int menu_option;
   uint16_t status;
@@ -49,14 +52,18 @@ void display_welcome(int socket_id) {
   scanf("%d", & menu_option);
   status = htons(menu_option);
 
-  if (menu_option == 1 || menu_option == 2) {
+  if (menu_option == 1 || menu_option == 2) { //1 = playgame, 2= display leaderboard
     send(socket_id, & status, sizeof(uint16_t), 0);
+    fflush(stdin);
     if(menu_option == 1){
       game_running = true;
     } else {
-      printf(" There's no leaderboard here because you don't need to compare yourself with others on the leaderboard. You're talented in you're own way <3\n");
+      printf(" There's no leaderboard here because you don't need to compare yourself with others on there. You're talented in you're own way <3\n");
+      fflush(stdin);
+      display_welcome(socket_id);
+      fflush(stdin);
     }
-  } else if (menu_option == 3) {
+  } else if (menu_option == 3) { //Quit
     printf("Disconnecting.. Adios!\n");
     close(socket_id);
     exit(1);
@@ -72,6 +79,7 @@ void display_login(int socket_id) {
   int match;
   uint16_t status;
 
+  //Prompt for login details
   printf("Enter login details:\n");
   printf("Username: ");
   scanf("%s", username);
@@ -83,11 +91,14 @@ void display_login(int socket_id) {
   send(socket_id, username, 20, 0);
   send(socket_id, password, 20, 0);
 
+  //Receive and integer indicting valid login credentials. 1=valid
   int a = recv(socket_id, & status, sizeof(uint16_t), 0);
   match = ntohs(status);
+  fflush(stdin);
   if (match == 1) {
+    strcpy(Username, username); //Save username for leaderboard
     display_welcome(socket_id);
-  } else /*if(match == 0)*/ {
+  } else {
     printf("Incorrect Username or Password. Disconnecting...\n");
     close(socket_id);
   }
@@ -102,7 +113,7 @@ void play_game(int sockfd) {
   bool valid_option;
   uint16_t status;
   clock_t start_time;
-  double time_taken;
+  time_taken = 0;
 
   start_time = clock();
   while (game_running) {
@@ -127,10 +138,7 @@ void play_game(int sockfd) {
         send(sockfd, & option_input, 1, 0); //send option input
         fflush(stdin);
         valid_option = true;
-      }/* else {
-        printf("Choose a valid move:\n");
-        fflush(stdin);
-      }*/
+      }
     }
 
     if (option_input == 'r' || option_input == 'f' ||
@@ -151,29 +159,31 @@ void play_game(int sockfd) {
       recv(sockfd, & status, sizeof(uint16_t), 0);
       outcome = ntohs(status);
       fflush(stdin);
-      if (outcome == -1) { //mine revealed game over
-        drawboard(sockfd);
+      if (outcome == 0) { //mine revealed game over
         printf("You have revealed a mine! Game over :(\n\n");
         game_running = false;
-        getchar();
+        games_played++;
+        drawboard(sockfd);
         display_welcome(sockfd);
-      } else if (outcome == 2) { //Already flagged
+        //fflush(stdin);
+        //getchar();
+      } else if (outcome == 3) { //Already flagged
         printf("\nYou have already flagged this tile\n");
-      } else if (outcome == 3) {
-        printf("\nNo mine there try again\n"); //No mine at flagged
       } else if (outcome == 4) {
+        printf("\nNo mine there try again\n"); //No mine at flagged
+      } else if (outcome == 5) {
         time_taken = (double)(clock() - start_time) / CLOCKS_PER_SEC;
         printf("Congratulations! You cleared all the mines in %f seconds\n", time_taken);
         game_running = false;
+        games_won++;
         drawboard(sockfd);
         display_welcome(sockfd);
       }
       valid_option = false; //return to options
-
     }
     if (option_input == 'q') {
       game_running = false;
-      //end_time = clock();
+      games_played++;
       display_welcome(sockfd);
     }
   }
@@ -219,7 +229,7 @@ int main(int argc, char * argv[]) {
 
   // Display login page
   display_login(sockfd);
-  play_game(sockfd);
+  play_game(sockfds);
 
   close(sockfd);
   return 0;

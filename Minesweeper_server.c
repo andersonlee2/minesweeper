@@ -22,18 +22,18 @@
 #define NUM_TILES_Y 9
 #define NUM_MINES 10
 
-char server_board[NUM_TILES_X][NUM_TILES_Y]; //Board keeping track of mines
-char client_board[NUM_TILES_X][NUM_TILES_Y];
+char server_board[NUM_TILES_X][NUM_TILES_Y]; //Board keeping track of mines and tile values
+char client_board[NUM_TILES_X][NUM_TILES_Y]; //Board to be sent to client
 char * mine = "*";
 char * revealed = "x";
 char * flag = "+";
 char * space = "-";
 
-int mine_positions[NUM_MINES][2];
+int mine_positions[NUM_MINES][2]; //2x10 array keeping track of each mine's coordinates
 int remaining_mines = NUM_MINES;
 
 bool game_running;
-bool tile_revealed[NUM_TILES_X][NUM_TILES_Y];
+bool tile_revealed[NUM_TILES_X][NUM_TILES_Y]; //For keeping track of mines revealed when recursively searching zeroes
 
 bool tile_contains_mine(int x, int y) {
   if (server_board[x][y] == * mine) {
@@ -43,6 +43,7 @@ bool tile_contains_mine(int x, int y) {
   }
 }
 
+//Clean the board
 void initialise_client_board() {
   for (int i = 0; i < NUM_TILES_X; i++) {
     for (int j = 0; j < NUM_TILES_Y; j++) {
@@ -86,11 +87,13 @@ void place_mines() {
   }
 }
 
+//Returns true if the coordinates are within the board
 bool is_valid(int x, int y) {
   return (x >= 0) && (x < NUM_TILES_X) &&
     (y >= 0) && (y < NUM_TILES_Y);
 }
 
+//Takes coordinates as the input and outputs the tile value (-1 for a mine or the number of adjacent mines)
 int check_tile(int x, int y) {
   int surrounding_tiles = 0;
   if (tile_contains_mine(x, y)) {
@@ -124,6 +127,7 @@ int check_tile(int x, int y) {
   return surrounding_tiles;
 }
 
+//Reveals the entire board if the player wins the game
 void initialise_server_board() {
   for (int i = 0; i < NUM_TILES_X; i++) {
     for (int j = 0; j < NUM_TILES_Y; j++) {
@@ -136,6 +140,7 @@ void initialise_server_board() {
   }
 }
 
+//Recieves the inputs from the client, and outputs what the player has selected
 void display_welcome(int socket_id) {
   int menu_option;
   uint16_t status;
@@ -153,9 +158,9 @@ void display_welcome(int socket_id) {
   } else if (menu_option == 2) {
     printf("Leaderboard Unavailable\n\n");
   }
-  //close(socket_id);
 }
 
+//Inputs the username and password entered and compares it with the authentication text file
 void display_login(int socket_id) {
   char entered_username[30];
   char entered_password[30];
@@ -188,14 +193,7 @@ void display_login(int socket_id) {
       fflush(stdin);
       display_welcome(socket_id);
     }
-    /*else {
-         match = 0;
-       }*/
   }
-  /*if (match == 0){
-  status = htons(match);
-  send(socket_id, &status, sizeof(uint16_t) , 0);
-}*/
 }
 
 void reveal_tile(int x, int y) {
@@ -206,6 +204,7 @@ void reveal_tile(int x, int y) {
   }
 }
 
+//Recursively checks surrounding tiles for other zeroes
 void open_safe_tiles(int x, int y) {
   if ((check_tile(x, y)) == 0) {
     //Recursively reveal surrounding tiles if they are zeroes
@@ -258,17 +257,8 @@ void reveal_mines() {
   }
 }
 
-void delay(int number_of_seconds) {
-  // Converting time into milli_seconds
-  int milli_seconds = 1000 * number_of_seconds;
 
-  // Storing start time
-  clock_t start_time = clock();
-
-  // looping till required time is not acheived
-  while (clock() < start_time + milli_seconds);
-}
-
+//Plays the minesweeper game
 void play_game(int socket_id) {
   char option_input;
   int x_input;
@@ -309,16 +299,16 @@ void play_game(int socket_id) {
       if (tile_no == -1) { //mine revealed
         reveal_mines();
         client_board[x_input][y_input] = * revealed;
-        outcome = -1;
+        outcome = 0;
         status = htons(outcome);
         send(socket_id, & status, sizeof(uint16_t), 0);
-        drawboard(socket_id);
+        fflush(stdin);
         printf("Mine revealed, Game over!\n\n");
-        display_welcome(socket_id);
         game_running = false;
+        drawboard(socket_id);
         display_welcome(socket_id);
       }
-      outcome = 0;
+      outcome = 1;
       status = htons(outcome);
       send(socket_id, & status, sizeof(uint16_t), 0);
       fflush(stdin);
@@ -331,22 +321,16 @@ void play_game(int socket_id) {
         server_board[x_input][y_input] = * flag;
         client_board[x_input][y_input] = * flag;
         remaining_mines--;
-        outcome = 1;
+        outcome = 2;
       } else if (client_board[x_input][y_input] == * flag) {
         printf("\nClient tried to flag already flagged tile\n");
-        outcome = 2;
-        //status = htons(outcome);
-        //send(socket_id, &status, sizeof(uint16_t),0);
-        //fflush(stdin);
+        outcome = 3;
       } else {
         printf("\nNo mine there try again\n");
-        outcome = 3;
-        //status = htons(outcome);
-        //send(socket_id, &status, sizeof(uint16_t),0);
-        //fflush(stdin);
+        outcome = 4;
       }
       if (remaining_mines == 0) {
-        outcome = 4;
+        outcome = 5;
         status = htons(outcome);
         send(socket_id, & status, sizeof(uint16_t), 0);
         fflush(stdin);
@@ -432,7 +416,6 @@ int main(int argc, char * argv[]) {
       inet_ntoa(their_addr.sin_addr));
 
     display_login(new_fd);
-
     play_game(new_fd);
   }
 
