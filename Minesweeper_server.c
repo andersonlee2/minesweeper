@@ -175,17 +175,16 @@ void display_login(int socket_id){
 	while(fscanf(file, "%s %s\n", valid_username, valid_password) > 0){
 		if(strcmp(entered_username, valid_username) == 0 && strcmp(entered_password, valid_password) == 0){
 			printf("Login successful\n");
-			int match = 1;
+			match = 1;
 			status = htons(match);
 			send(socket_id, &status, sizeof(uint16_t) , 0);
 			fflush(stdin);
 			display_welcome(socket_id);
-		}/* else {
-      int match = 0;
-			status = htons(match);
-			send(socket_id, &status, sizeof(uint16_t) , 0);
-    }*/
+		}
 	}
+  match = 0;
+  status = htons(match);
+  send(socket_id, &status, sizeof(uint16_t) , 0);
 }
 
 void reveal_tile(int x ,int y){

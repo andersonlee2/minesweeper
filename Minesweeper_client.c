@@ -81,8 +81,6 @@ void display_login(int socket_id){
 
   int a = recv(socket_id, &status, sizeof(uint16_t), 0);
   match = ntohs(status);
-  printf("status =%d", status);
-  printf("match =%d", match);
   if(match == 1){
 		display_welcome(socket_id);
   }else /*if(match == 0)*/{
